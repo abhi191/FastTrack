@@ -25,7 +25,7 @@ fun TimerScreen(viewModel: TimerViewModel, modifier: Modifier = Modifier) {
     var showCustomDialog by remember { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
 
-    val protocols = listOf("14:10" to 14, "16:8" to 16, "18:6" to 18, "20:4" to 20)
+    val protocols = listOf("14h" to 14, "16h" to 16, "18h" to 18, "20h" to 20)
 
     Column(
         modifier = modifier.fillMaxSize().padding(horizontal = 24.dp),
