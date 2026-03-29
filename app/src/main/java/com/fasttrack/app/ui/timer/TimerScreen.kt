@@ -1,7 +1,9 @@
 package com.fasttrack.app.ui.timer
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -53,14 +55,16 @@ fun TimerScreen(viewModel: TimerViewModel, modifier: Modifier = Modifier) {
         Text("Fasting Protocol", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        ) {
             protocols.forEach { (label, hours) ->
                 FilterChip(
                     selected = state.targetDurationHours == hours,
                     onClick = { viewModel.setTargetHours(hours) },
                     label = { Text(label) },
                     enabled = !state.isRunning,
-                    modifier = Modifier.weight(1f),
                 )
             }
             FilterChip(
