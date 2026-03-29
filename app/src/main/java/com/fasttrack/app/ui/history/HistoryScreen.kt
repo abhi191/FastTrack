@@ -109,7 +109,7 @@ fun HistoryCard(session: FastingSession) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${session.startingWeight} kg",
+                        text = "${session.startingWeight} ${session.weightUnit ?: "kg"}",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary
                     )

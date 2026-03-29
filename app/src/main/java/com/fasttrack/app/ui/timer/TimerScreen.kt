@@ -77,16 +77,41 @@ fun TimerScreen(viewModel: TimerViewModel, modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = state.startingWeight,
-            onValueChange = { viewModel.setStartingWeight(it) },
-            label = { Text("Starting Weight (Optional)") },
-            singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            enabled = !state.isRunning,
+        Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            trailingIcon = { Text("kg / lbs", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(end = 12.dp)) }
-        )
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = state.startingWeight,
+                onValueChange = { viewModel.setStartingWeight(it) },
+                label = { Text("Starting Weight") },
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                enabled = !state.isRunning,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = !state.isWeightInLbs,
+                        onClick = { viewModel.setWeightUnit(false) },
+                        enabled = !state.isRunning,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text("kg", style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = state.isWeightInLbs,
+                        onClick = { viewModel.setWeightUnit(true) },
+                        enabled = !state.isRunning,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text("lb", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

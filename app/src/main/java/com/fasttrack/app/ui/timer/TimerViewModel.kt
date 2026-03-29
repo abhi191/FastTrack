@@ -21,6 +21,7 @@ data class TimerState(
     val targetDurationHours: Int = 16,
     val startTimeMillis: Long = 0L,
     val startingWeight: String = "",
+    val isWeightInLbs: Boolean = false,
 )
 
 class TimerViewModel(
@@ -47,6 +48,24 @@ class TimerViewModel(
 
     fun setStartingWeight(weightStr: String) {
         _state.update { it.copy(startingWeight = weightStr) }
+    }
+
+    fun setWeightUnit(toLbs: Boolean) {
+        val current = _state.value
+        if (current.isWeightInLbs == toLbs) return
+        
+        val weightValue = current.startingWeight.toFloatOrNull()
+        val newWeightStr = if (weightValue != null) {
+            if (toLbs) {
+                // kg -> lb
+                String.format("%.1f", weightValue * 2.20462f)
+            } else {
+                // lb -> kg
+                String.format("%.1f", weightValue / 2.20462f)
+            }
+        } else current.startingWeight
+        
+        _state.update { it.copy(isWeightInLbs = toLbs, startingWeight = newWeightStr) }
     }
 
     fun toggleTimer() {
@@ -88,6 +107,7 @@ class TimerViewModel(
         val successful = currentState.elapsedMillis >= targetMillis
         
         val weightFloat = currentState.startingWeight.toFloatOrNull()
+        val unit = if (currentState.isWeightInLbs) "lb" else "kg"
 
         // Save to Room DB
         viewModelScope.launch {
@@ -96,7 +116,8 @@ class TimerViewModel(
                 endTimeMillis = endTime,
                 targetDurationHours = currentState.targetDurationHours,
                 successful = successful,
-                startingWeight = weightFloat
+                startingWeight = weightFloat,
+                weightUnit = unit
             )
             historyDao.insert(session)
         }

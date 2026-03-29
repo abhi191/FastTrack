@@ -11,5 +11,6 @@ data class FastingSession(
     val endTimeMillis: Long,
     val targetDurationHours: Int,
     val successful: Boolean,
-    val startingWeight: Float? = null // Optional starting weight
+    val startingWeight: Float? = null,
+    val weightUnit: String? = null
 )
