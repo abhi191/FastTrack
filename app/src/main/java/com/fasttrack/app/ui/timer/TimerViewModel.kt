@@ -31,26 +31,25 @@ class TimerViewModel(
     private val historyDao: HistoryDao,
     private val workManager: WorkManager
 ) : ViewModel() {
-    private val _state = MutableStateFlow(TimerState())
+    private val prefs = TimerPreferences(application)
+    private val _state = MutableStateFlow(prefs.getTimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
     private var timerJob: Job? = null
 
     init {
-        viewModelScope.launch {
-            val restored = TimerPreferences.getTimerState(application).first()
-            _state.value = restored
-            if (restored.isRunning) {
-                val now = System.currentTimeMillis()
-                _state.update { it.copy(elapsedMillis = now - restored.startTimeMillis) }
-                resumeTimer()
-            }
+        val restored = _state.value
+        if (restored.isRunning && restored.startTimeMillis > 0) {
+            val now = System.currentTimeMillis()
+            _state.update { it.copy(elapsedMillis = now - restored.startTimeMillis) }
+            resumeTimer()
         }
     }
 
     private fun saveState() {
-        viewModelScope.launch {
-            TimerPreferences.saveTimerState(application, _state.value)
+        // Run on IO to prevent strict mode violations, but SharedPreferences will queue writes
+        viewModelScope.launch(Dispatchers.IO) {
+            prefs.saveTimerState(_state.value)
         }
     }
 
