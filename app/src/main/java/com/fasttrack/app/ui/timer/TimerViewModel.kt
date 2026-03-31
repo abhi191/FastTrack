@@ -1,11 +1,13 @@
 package com.fasttrack.app.ui.timer
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.fasttrack.app.data.TimerPreferences
 import com.fasttrack.app.data.history.FastingSession
 import com.fasttrack.app.data.history.HistoryDao
 import com.fasttrack.app.notifications.StageNotificationWorker
@@ -25,6 +27,7 @@ data class TimerState(
 )
 
 class TimerViewModel(
+    private val application: Context,
     private val historyDao: HistoryDao,
     private val workManager: WorkManager
 ) : ViewModel() {
@@ -32,6 +35,24 @@ class TimerViewModel(
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
     private var timerJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            val restored = TimerPreferences.getTimerState(application).first()
+            _state.value = restored
+            if (restored.isRunning) {
+                val now = System.currentTimeMillis()
+                _state.update { it.copy(elapsedMillis = now - restored.startTimeMillis) }
+                resumeTimer()
+            }
+        }
+    }
+
+    private fun saveState() {
+        viewModelScope.launch {
+            TimerPreferences.saveTimerState(application, _state.value)
+        }
+    }
 
     val currentStage: StateFlow<FastingStage?> = _state.map { s ->
         if (!s.isRunning && s.elapsedMillis == 0L) return@map null
@@ -44,10 +65,12 @@ class TimerViewModel(
 
     fun setTargetHours(hours: Int) {
         _state.update { it.copy(targetDurationHours = hours) }
+        saveState()
     }
 
     fun setStartingWeight(weightStr: String) {
         _state.update { it.copy(startingWeight = weightStr) }
+        saveState()
     }
 
     fun setWeightUnit(toLbs: Boolean) {
@@ -66,6 +89,7 @@ class TimerViewModel(
         } else current.startingWeight
         
         _state.update { it.copy(isWeightInLbs = toLbs, startingWeight = newWeightStr) }
+        saveState()
     }
 
     fun toggleTimer() {
@@ -75,12 +99,14 @@ class TimerViewModel(
     fun resetTimer() {
         stopTimer()
         _state.update { it.copy(elapsedMillis = 0L, startTimeMillis = 0L) }
+        saveState()
     }
 
     private fun startTimer() {
         val now = System.currentTimeMillis()
         val previousElapsed = _state.value.elapsedMillis
         _state.update { it.copy(isRunning = true, startTimeMillis = now - previousElapsed) }
+        saveState()
         
         scheduleMilestones(now - previousElapsed)
 
@@ -97,7 +123,22 @@ class TimerViewModel(
         timerJob?.cancel()
         timerJob = null
         _state.update { it.copy(isRunning = false) }
+        saveState()
         workManager.cancelAllWorkByTag(StageNotificationWorker.WORK_TAG)
+    }
+
+    private fun resumeTimer() {
+        if (timerJob?.isActive == true) return
+        val currentElapsed = System.currentTimeMillis() - _state.value.startTimeMillis
+        scheduleMilestones(currentElapsed)
+
+        timerJob = viewModelScope.launch {
+            while (isActive) {
+                val elapsed = System.currentTimeMillis() - _state.value.startTimeMillis
+                _state.update { it.copy(elapsedMillis = elapsed) }
+                delay(1000L)
+            }
+        }
     }
 
     private fun endFast() {
@@ -157,13 +198,14 @@ class TimerViewModel(
 }
 
 class TimerViewModelFactory(
+    private val application: Context,
     private val historyDao: HistoryDao,
     private val workManager: WorkManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TimerViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TimerViewModel(historyDao, workManager) as T
+            return TimerViewModel(application, historyDao, workManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

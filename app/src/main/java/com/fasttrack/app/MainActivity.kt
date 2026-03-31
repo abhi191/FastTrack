@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val timerViewModel: TimerViewModel by viewModels {
         val application = application as FastTrackApplication
-        TimerViewModelFactory(application.database.historyDao(), WorkManager.getInstance(application))
+        TimerViewModelFactory(application, application.database.historyDao(), WorkManager.getInstance(application))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
