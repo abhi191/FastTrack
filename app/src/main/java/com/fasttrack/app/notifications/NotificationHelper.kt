@@ -28,7 +28,7 @@ object NotificationHelper {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Milestone Reached! $stageEmoji")
             .setContentText("You've entered the $stageName stage!")
             .setStyle(NotificationCompat.BigTextStyle().bigText(description))
