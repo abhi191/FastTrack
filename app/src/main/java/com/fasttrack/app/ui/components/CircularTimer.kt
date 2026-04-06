@@ -17,7 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
 import com.fasttrack.app.theme.*
+import com.fasttrack.app.ui.stages.fastingStages
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -41,6 +45,9 @@ fun CircularTimer(
         animationSpec = tween(durationMillis = 500, easing = EaseInOutCubic),
         label = "progress"
     )
+
+    val textMeasurer = rememberTextMeasurer()
+    val surfaceColor = MaterialTheme.colorScheme.surface
 
     val gradientStart = if (isDarkTheme) TimerGradientStartDark else TimerGradientStart
     val gradientEnd = if (isDarkTheme) TimerGradientEndDark else TimerGradientEnd
@@ -110,6 +117,50 @@ fun CircularTimer(
                     val dotY = (size.height / 2f + radius * sin(angleRad)).toFloat()
                     drawCircle(color = gradientEnd.copy(alpha = glowAlpha), radius = stroke * 1.5f, center = Offset(dotX, dotY))
                     drawCircle(color = gradientEnd, radius = stroke * 0.6f, center = Offset(dotX, dotY))
+                }
+            }
+
+            // Fasting Stage Markers
+            fastingStages.forEach { stage ->
+                val stageMillis = (stage.thresholdHours * 3600f * 1000f).toLong()
+                if (stageMillis > 0 && stageMillis <= targetMillis) {
+                    val stageProgress = stageMillis.toFloat() / targetMillis.toFloat()
+                    val stageAngle = stageProgress * 360f
+                    val angleRad = Math.toRadians((-90.0 + stageAngle))
+                    val radius = diameter / 2f
+                    val markerX = (size.width / 2f + radius * cos(angleRad)).toFloat()
+                    val markerY = (size.height / 2f + radius * sin(angleRad)).toFloat()
+
+                    val isStagePassed = elapsedMillis >= stageMillis
+                    val markerBgColor = if (isStagePassed) gradientStart else surfaceColor
+
+                    // Border circle
+                    drawCircle(
+                        color = trackColor,
+                        radius = stroke * 1.2f,
+                        center = Offset(markerX, markerY)
+                    )
+                    // Inner background circle
+                    drawCircle(
+                        color = markerBgColor,
+                        radius = stroke * 0.9f,
+                        center = Offset(markerX, markerY)
+                    )
+
+                    // Draw Emoji inside marker
+                    val textLayoutResult = textMeasurer.measure(
+                        text = stage.emoji,
+                        style = TextStyle(fontSize = 12.sp)
+                    )
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = stage.emoji,
+                        style = TextStyle(fontSize = 12.sp),
+                        topLeft = Offset(
+                            markerX - textLayoutResult.size.width / 2f,
+                            markerY - textLayoutResult.size.height / 2f
+                        )
+                    )
                 }
             }
         }
